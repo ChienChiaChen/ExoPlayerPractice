@@ -9,6 +9,7 @@ import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.chiachen.exoplayerpractice.presentation.video_list.VideoListScreen
 import com.chiachen.exoplayerpractice.presentation.video_player.VideoPlayerScreen
+import com.chiachen.exoplayerpractice.utils.Constants
 
 @Composable
 fun AppNavHost(modifier: Modifier = Modifier) {
@@ -16,15 +17,15 @@ fun AppNavHost(modifier: Modifier = Modifier) {
 
     NavHost(
         navController = navController,
-        startDestination = "list",
+        startDestination = Constants.VIDEO_LIST,
         modifier = modifier
     ) {
-        composable("list") {
+        composable(Constants.VIDEO_LIST) {
             VideoListScreen(navController = navController)
         }
 
         composable(
-            route = "player?videoUrl={videoUrl}",
+            route = "${Constants.VIDEO_PLAYER}?videoUrl={videoUrl}",
             arguments = listOf(navArgument("videoUrl") {
                 type = NavType.StringType
                 nullable = false
