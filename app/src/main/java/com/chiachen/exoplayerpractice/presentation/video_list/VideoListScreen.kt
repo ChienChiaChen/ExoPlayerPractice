@@ -92,37 +92,33 @@ fun VideoListScreen(
                         }
                     )
                 }
+            }
 
-                videos.apply {
-                    when {
-                        loadState.refresh is LoadState.Loading -> {
-                            this@LazyColumn.item { LoadingItem() }
+            videos.apply {
+                when {
+                    loadState.refresh is LoadState.Loading ->
+                        item { LoadingItem() }
+                    loadState.append is LoadState.Loading ->
+                        item { LoadingItem() }
+
+                    loadState.refresh is LoadState.Error ->
+                        item {
+                            ErrorItem(
+                                message = (loadState.refresh as LoadState.Error).error.localizedMessage
+                                    ?: "Error loading videos",
+                                onRetryClick = { retry() }
+                            )
                         }
 
-                        loadState.append is LoadState.Loading -> {
-                            this@LazyColumn.item { LoadingItem() }
+                    loadState.append is LoadState.Error ->
+                        item {
+                            ErrorItem(
+                                message = (loadState.append as LoadState.Error).error.localizedMessage
+                                    ?: "Error loading more videos",
+                                onRetryClick = { retry() }
+                            )
                         }
 
-                        loadState.refresh is LoadState.Error -> {
-                            this@LazyColumn.item {
-                                ErrorItem(
-                                    message = (loadState.refresh as LoadState.Error).error.localizedMessage
-                                        ?: "Error loading videos",
-                                    onRetryClick = { retry() }
-                                )
-                            }
-                        }
-
-                        loadState.append is LoadState.Error -> {
-                            this@LazyColumn.item {
-                                ErrorItem(
-                                    message = (loadState.append as LoadState.Error).error.localizedMessage
-                                        ?: "Error loading more videos",
-                                    onRetryClick = { retry() }
-                                )
-                            }
-                        }
-                    }
                 }
             }
         }
