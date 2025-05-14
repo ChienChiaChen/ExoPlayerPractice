@@ -8,6 +8,7 @@ import android.content.IntentFilter
 import android.net.Uri
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
@@ -33,6 +34,20 @@ fun VideoListScreen(
     val videos = viewModel.videos.collectAsLazyPagingItems()
     val downloadingIds by viewModel.downloadingIds.collectAsState()
     val downloadIdToVideoId = remember { mutableStateMapOf<Long, Int>() }
+    
+    // Use rememberLazyListState to save list state
+    val listState = rememberLazyListState(
+        initialFirstVisibleItemIndex = viewModel.firstVisibleItemIndex,
+        initialFirstVisibleItemScrollOffset = viewModel.firstVisibleItemScrollOffset
+    )
+
+    // Update scroll position in ViewModel when list scrolls
+    LaunchedEffect(listState) {
+        snapshotFlow { listState.firstVisibleItemIndex to listState.firstVisibleItemScrollOffset }
+            .collect { (index, offset) ->
+                viewModel.updateScrollPosition(index, offset)
+            }
+    }
 
     // Register receiver once per screen
     DisposableEffect(Unit) {
@@ -60,7 +75,9 @@ fun VideoListScreen(
         topBar = { TopAppBar(title = { Text("Video List") }) }
     ) { padding ->
         Box(modifier = Modifier.padding(padding)) {
-            LazyColumn {
+            LazyColumn(
+                state = listState
+            ) {
                 items(
                     count = videos.itemCount,
                     key = videos.itemKey { it.id }
