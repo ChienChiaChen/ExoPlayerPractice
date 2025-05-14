@@ -6,44 +6,20 @@ import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
 import android.net.Uri
-import android.os.Build
-import androidx.annotation.RequiresApi
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.aspectRatio
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Check
-import androidx.compose.material.icons.filled.Download
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.DisposableEffect
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateMapOf
-import androidx.compose.runtime.remember
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
+import androidx.paging.LoadState
 import androidx.paging.compose.collectAsLazyPagingItems
-import coil.compose.AsyncImage
+import androidx.paging.compose.itemKey
+import com.chiachen.exoplayerpractice.presentation.components.ErrorItem
+import com.chiachen.exoplayerpractice.presentation.components.LoadingItem
+import com.chiachen.exoplayerpractice.presentation.components.VideoItem
 import com.chiachen.exoplayerpractice.utils.Constants
 import com.chiachen.exoplayerpractice.utils.DownloadHelper
 
@@ -80,92 +56,61 @@ fun VideoListScreen(
         }
     }
 
-
     Scaffold(
         topBar = { TopAppBar(title = { Text("Video List") }) }
     ) { padding ->
-        LazyColumn(modifier = Modifier.padding(padding)) {
-            items(
-                count = videos.itemCount,
-                key = { index -> videos[index]?.id ?: index }
-            ) { index ->
-                val video = videos[index]
-                if (video != null) {
-                    val fileName = "video_${video.id}.mp4"
-                    val isDownloaded = DownloadHelper.isVideoDownloaded(fileName)
-                    val isDownloading = downloadingIds.contains(video.id)
-
-                    Card(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(8.dp)
-                            .clickable {
-                                val videoUrl =
-                                    video.videoFiles.firstOrNull()?.link ?: return@clickable
+        Box(modifier = Modifier.padding(padding)) {
+            LazyColumn {
+                items(
+                    count = videos.itemCount,
+                    key = videos.itemKey { it.id }
+                ) { index ->
+                    val video = videos[index]
+                    if (video != null) {
+                        VideoItem(
+                            video = video,
+                            isDownloading = downloadingIds.contains(video.id),
+                            onVideoClick = { videoUrl ->
                                 navController.navigate(
-                                    "${Constants.VIDEO_PLAYER}?videoUrl=${
-                                        Uri.encode(
-                                            videoUrl
-                                        )
-                                    }"
+                                    "${Constants.VIDEO_PLAYER}?videoUrl=${Uri.encode(videoUrl)}"
                                 )
                             },
-                        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
-                    ) {
-                        Column {
-                            AsyncImage(
-                                model = video.image,
-                                contentDescription = "Video Thumbnail",
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .aspectRatio(16 / 9f),
-                                contentScale = ContentScale.Crop
-                            )
-
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.SpaceBetween
-                            ) {
-                                Text(
-                                    text = video.url,
-                                    modifier = Modifier
-                                        .padding(8.dp)
-                                        .weight(1f),
-                                    maxLines = 1,
-                                    overflow = TextOverflow.Ellipsis
+                            onDownloadClick = { videoUrl ->
+                                val fileName = "video_${video.id}.mp4"
+                                val downloadId = DownloadHelper.downloadVideo(
+                                    context,
+                                    videoUrl,
+                                    fileName
                                 )
+                                downloadIdToVideoId[downloadId] = video.id
+                                viewModel.markDownloading(video.id)
+                            }
+                        )
+                    }
+                }
 
-                                IconButton(
-                                    onClick = {
-                                        val videoUrl = video.videoFiles.firstOrNull()?.link
-                                            ?: return@IconButton
-                                        val downloadId = DownloadHelper.downloadVideo(
-                                            context,
-                                            videoUrl,
-                                            fileName
-                                        )
-                                        downloadIdToVideoId[downloadId] = video.id
-                                        viewModel.markDownloading(video.id)
-                                    },
-                                    enabled = !isDownloaded && !isDownloading
-                                ) {
-                                    when {
-                                        isDownloaded -> Icon(
-                                            Icons.Default.Check,
-                                            contentDescription = "Downloaded"
-                                        )
-
-                                        isDownloading -> CircularProgressIndicator(
-                                            modifier = Modifier.size(24.dp),
-                                            strokeWidth = 2.dp
-                                        )
-
-                                        else -> Icon(
-                                            Icons.Default.Download,
-                                            contentDescription = "downloading"
-                                        )
-                                    }
-                                }
+                videos.apply {
+                    when {
+                        loadState.refresh is LoadState.Loading -> {
+                            item { LoadingItem() }
+                        }
+                        loadState.append is LoadState.Loading -> {
+                            item { LoadingItem() }
+                        }
+                        loadState.refresh is LoadState.Error -> {
+                            item {
+                                ErrorItem(
+                                    message = (loadState.refresh as LoadState.Error).error.localizedMessage ?: "Error loading videos",
+                                    onRetryClick = { retry() }
+                                )
+                            }
+                        }
+                        loadState.append is LoadState.Error -> {
+                            item {
+                                ErrorItem(
+                                    message = (loadState.append as LoadState.Error).error.localizedMessage ?: "Error loading more videos",
+                                    onRetryClick = { retry() }
+                                )
                             }
                         }
                     }
