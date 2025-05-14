@@ -7,6 +7,7 @@ object Constants{
     const val NETWORK_PAGE_SIZE = 10
     const val VIDEO_LIST = "list"
     const val VIDEO_PLAYER = "player"
+    const val VIDEO_DOWNLOADS = "downloads"
     const val DOWNLOAD_FOLDER_NAME = "pexels_video"
 
 }
