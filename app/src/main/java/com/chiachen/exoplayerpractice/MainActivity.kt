@@ -10,6 +10,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import com.chiachen.exoplayerpractice.ui.navigation.AppNavHost
 import com.chiachen.exoplayerpractice.ui.theme.ExoPlayerPracticeTheme
+import com.chiachen.exoplayerpractice.utils.FileObserverManager
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -18,6 +19,11 @@ class MainActivity : ComponentActivity() {
         setContent {
             AppNavHost()
         }
+    }
+
+    override fun onResume() {
+        super.onResume()
+        FileObserverManager.syncCurrentFiles()
     }
 }
 

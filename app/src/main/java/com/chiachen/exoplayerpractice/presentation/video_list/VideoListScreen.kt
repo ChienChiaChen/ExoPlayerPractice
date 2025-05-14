@@ -1,10 +1,5 @@
 package com.chiachen.exoplayerpractice.presentation.video_list
 
-import android.app.DownloadManager
-import android.content.BroadcastReceiver
-import android.content.Context
-import android.content.Intent
-import android.content.IntentFilter
 import android.net.Uri
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -29,7 +24,6 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -60,6 +54,7 @@ fun VideoListScreen(
     val context = LocalContext.current
     val videos = viewModel.videos.collectAsLazyPagingItems()
     val downloadingIds by viewModel.downloadingIds.collectAsState()
+    val deletedFileNames by viewModel.deletedFileNames.collectAsState()
     val downloadIdToVideoId = remember { mutableStateMapOf<Long, Int>() }
 
     // Use rememberLazyListState to save list state
@@ -76,28 +71,6 @@ fun VideoListScreen(
             }
     }
 
-    // Register receiver once per screen
-    DisposableEffect(Unit) {
-        val receiver = object : BroadcastReceiver() {
-            override fun onReceive(ctx: Context, intent: Intent) {
-                if (intent.action == DownloadManager.ACTION_DOWNLOAD_COMPLETE) {
-                    val downloadId = intent.getLongExtra(DownloadManager.EXTRA_DOWNLOAD_ID, -1L)
-                    val videoId = downloadIdToVideoId[downloadId]
-                    if (videoId != null) {
-                        viewModel.unmarkDownloading(videoId)
-                    }
-                }
-            }
-        }
-        context.registerReceiver(
-            receiver, IntentFilter(DownloadManager.ACTION_DOWNLOAD_COMPLETE),
-            Context.RECEIVER_NOT_EXPORTED
-        )
-        onDispose {
-            context.unregisterReceiver(receiver)
-        }
-    }
-
     Scaffold(
         topBar = { TopAppBar(title = { Text("Video List") }) }
     ) { padding ->
@@ -112,7 +85,7 @@ fun VideoListScreen(
                 val video = videos[index]
                 if (video != null) {
                     val fileName = "video_${video.id}.mp4"
-                    val isDownloaded = DownloadHelper.isVideoDownloaded(fileName)
+                    val isDownloaded = DownloadHelper.isVideoDownloaded(fileName) && !deletedFileNames.contains(video.id)
                     val isDownloading = downloadingIds.contains(video.id)
 
                     Card(
