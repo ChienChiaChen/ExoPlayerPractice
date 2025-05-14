@@ -1,6 +1,6 @@
 package com.chiachen.exoplayerpractice.presentation.video_player
 
-import android.net.Uri
+import android.os.Bundle
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
@@ -18,11 +18,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.viewinterop.AndroidView
-import androidx.lifecycle.Lifecycle
-import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.viewmodel.compose.viewModel
-import androidx.media3.common.MediaItem
-import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.ui.PlayerView
 import androidx.navigation.NavController
 
@@ -36,33 +32,26 @@ fun VideoPlayerScreen(
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
 
-    val exoPlayer = remember {
-        ExoPlayer.Builder(context).build().apply {
-            val mediaItem = MediaItem.fromUri(Uri.parse(videoUrl))
-            setMediaItem(mediaItem)
-            seekTo(viewModel.currentMediaItemIndex, viewModel.playbackPosition)
-            playWhenReady = viewModel.playWhenReady
-            prepare()
+    val playerManager = remember {
+        ExoPlayerManager(context, lifecycleOwner).apply {
+            // Try to restore state from ViewModel
+            viewModel.savedState.get<Bundle>("playerState")?.let { bundle ->
+                restoreState(bundle)
+            }
+            initializePlayer()
+            preparePlayer(videoUrl)
         }
     }
 
-    // 監聽生命週期事件
-    DisposableEffect(lifecycleOwner) {
-        val observer = LifecycleEventObserver { _, event ->
-            when (event) {
-                Lifecycle.Event.ON_PAUSE -> {
-                    // 當應用程式進入背景時暫停播放
-                    exoPlayer.pause()
-                }
-                else -> {}
-            }
-        }
-
-        lifecycleOwner.lifecycle.addObserver(observer)
+    // Save state
+    DisposableEffect(Unit) {
         onDispose {
-            lifecycleOwner.lifecycle.removeObserver(observer)
-            viewModel.savePlayerState(exoPlayer)
-            exoPlayer.release()
+            // Update state in ViewModel
+            viewModel.savedState["playerState"] =  Bundle().apply {
+                playerManager.saveState(this)
+            }
+
+            playerManager.release()
         }
     }
 
@@ -72,7 +61,7 @@ fun VideoPlayerScreen(
                 title = { Text("Play Video") },
                 navigationIcon = {
                     IconButton(onClick = { navController.popBackStack() }) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "返回")
+                        Icon(Icons.Default.ArrowBack, contentDescription = "Back")
                     }
                 }
             )
@@ -81,7 +70,7 @@ fun VideoPlayerScreen(
         AndroidView(
             factory = {
                 PlayerView(it).apply {
-                    player = exoPlayer
+                    player = playerManager.getPlayer()
                     useController = true
                 }
             },
