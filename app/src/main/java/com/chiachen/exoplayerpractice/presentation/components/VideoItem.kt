@@ -15,11 +15,10 @@ import coil.compose.AsyncImage
 
 @Composable
 fun VideoItem(
-//    video: Video,
-    videoUrl:String,
-    videoImage:String,
-    videoLink:String,
-    isDownloaded :Boolean,
+    videoUrl: String,
+    videoImage: String,
+    videoLink: String,
+    isDownloaded: Boolean,
     isDownloading: Boolean,
     onVideoClick: (String) -> Unit,
     onDownloadClick: (String) -> Unit
@@ -30,15 +29,6 @@ fun VideoItem(
             .padding(8.dp)
             .clickable {
                 onVideoClick(videoLink)
-//                val videoUrl =
-//                    video.videoFiles.firstOrNull()?.link ?: return@clickable
-//                navController.navigate(
-//                    "${Constants.VIDEO_PLAYER}?videoUrl=${
-//                        Uri.encode(
-//                            videoUrl
-//                        )
-//                    }"
-//                )
             },
         elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
     ) {
@@ -67,15 +57,6 @@ fun VideoItem(
 
                 IconButton(
                     onClick = {
-//                        val videoUrl = video.videoFiles.firstOrNull()?.link
-//                            ?: return@IconButton
-//                        val downloadId = DownloadHelper.downloadVideo(
-//                            context,
-//                            videoUrl,
-//                            fileName
-//                        )
-//                        downloadIdToVideoId[downloadId] = video.id
-//                        viewModel.markDownloading(video.id)
                         onDownloadClick(videoLink)
                     },
                     enabled = !isDownloaded && !isDownloading
@@ -88,12 +69,12 @@ fun VideoItem(
 
                         isDownloading -> CircularProgressIndicator(
                             modifier = Modifier.size(24.dp),
-                            strokeWidth = 2.dp
+                            strokeWidth = 2.dp,
                         )
 
                         else -> Icon(
                             Icons.Default.Download,
-                            contentDescription = "downloading"
+                            contentDescription = "download"
                         )
                     }
                 }

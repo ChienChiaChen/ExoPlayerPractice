@@ -37,7 +37,6 @@ fun VideoListScreen(
     val videos = viewModel.videos.collectAsLazyPagingItems()
     val downloadingIds by viewModel.downloadingIds.collectAsState()
     val deletedFileNames by viewModel.deletedFileNames.collectAsState()
-    val downloadIdToVideoId = remember { mutableStateMapOf<Long, Int>() }
 
     // Use rememberLazyListState to save list state
     val listState = rememberLazyListState(
@@ -68,9 +67,8 @@ fun VideoListScreen(
                 if (video != null) {
                     val fileName = "video_${video.id}.mp4"
                     val isDownloaded =
-                        DownloadHelper.isVideoDownloaded(fileName) && !deletedFileNames.contains(
-                            video.id
-                        )
+                        DownloadHelper.isVideoDownloaded(fileName) &&
+                                !deletedFileNames.contains(video.id)
                     val isDownloading = downloadingIds.contains(video.id)
                     val videoLink = video.videoFiles.firstOrNull()?.link.orEmpty()
                     VideoItem(
@@ -85,9 +83,7 @@ fun VideoListScreen(
                             )
                         },
                         onDownloadClick = {
-                            val downloadId =
-                                DownloadHelper.downloadVideo(context, videoLink, fileName)
-                            downloadIdToVideoId[downloadId] = video.id
+                            DownloadHelper.downloadVideo(context, videoLink, fileName)
                             viewModel.markDownloading(video.id)
                         }
                     )

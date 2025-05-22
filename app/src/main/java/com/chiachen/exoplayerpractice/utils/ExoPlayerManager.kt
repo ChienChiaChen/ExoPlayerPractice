@@ -70,7 +70,7 @@ object ExoPlayerManager {
 
         val mediaSource = ProgressiveMediaSource.Factory(dataSourceFactory)
             .createMediaSource(mediaItem)
-
+        playWhenReady = true
         exoPlayer?.apply {
             setMediaSource(mediaSource)
             seekTo(currentMediaItemIndex, playbackPosition)
